@@ -1,11 +1,10 @@
-package com.ismaelSS.translate;
+package com.ismaelSS;
 
 import space.dynomake.libretranslate.Language;
 import space.dynomake.libretranslate.Translator;
 
 public class TranslateService {
 
-    // 🔥 configura API UMA vez
     static {
         Translator.setUrlApi("http://localhost:5000/translate");
     }
@@ -15,7 +14,6 @@ public class TranslateService {
 
             if (text == null || text.isBlank()) return "";
 
-            // 🔥 chamada da lib (simples e limpa)
             String result = Translator.translate(
                     sourceLang,
                     targetLang,
@@ -26,7 +24,7 @@ public class TranslateService {
 
         } catch (Exception e) {
             System.out.println("ERRO TRADUÇÃO: " + e.getMessage());
-            return text; // fallback
+            return text;
         }
     }
 
