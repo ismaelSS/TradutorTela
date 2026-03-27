@@ -1,25 +1,36 @@
 package com.ismaelSS;
 
+import com.ismaelSS.translate.TranslateService;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import net.sourceforge.tess4j.Tesseract;
 
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main extends Application {
 
     private Tesseract tesseract;
+    private TranslateService translateService;
+
+    // 🔥 cache de tradução (melhora MUITO performance)
+    private Map<String, String> cache = new HashMap<>();
 
     @Override
     public void start(Stage primaryStage) {
 
+        // 🔍 OCR setup
         tesseract = new Tesseract();
         tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
         tesseract.setLanguage("eng");
 
+        // 🔥 melhora layout
         tesseract.setPageSegMode(1);
         tesseract.setTessVariable("preserve_interword_spaces", "1");
+
+        // 🌍 tradução
+        translateService = new TranslateService();
 
         ScreenSelector selector = new ScreenSelector();
 
@@ -27,14 +38,17 @@ public class Main extends Application {
             try {
                 BufferedImage img = ScreenCapture.capture(x, y, w, h);
 
+                // 🔍 OCR
                 String rawText = tesseract.doOCR(img);
 
+                // 🧠 formatação
                 String processedText = processText(rawText);
 
                 System.out.println("==== ORIGINAL ====");
                 System.out.println(processedText);
 
-                String translatedText = translateWithPython(processedText);
+                // 🌍 TRADUÇÃO
+                String translatedText = translatePreservingFormat(processedText);
 
                 System.out.println("==== TRADUZIDO ====");
                 System.out.println(translatedText);
@@ -45,43 +59,7 @@ public class Main extends Application {
         });
     }
 
-    private String translateWithPython(String text) {
-
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    "C:\\Users\\ismae\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
-                    "translate.py");
-
-            pb.directory(new File("src/main/python/scripts"));
-            Process process = pb.start();
-
-            try (OutputStream os = process.getOutputStream()) {
-                os.write(text.getBytes());
-                os.flush();
-            }
-
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream())
-            );
-
-            StringBuilder resultado = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                resultado.append(line).append("\n");
-            }
-
-            process.waitFor();
-
-            return resultado.toString();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return text;
-        }
-    }
-
+    // 🔥 preserva layout do OCR
     private String processText(String text) {
 
         String[] linhas = text.split("\n");
@@ -100,6 +78,31 @@ public class Main extends Application {
         }
 
         return resultado.toString();
+    }
+
+    // 🌍 traduz mantendo layout
+    private String translatePreservingFormat(String text) {
+        // 🔥 traduz tudo de uma vez
+        String translated = translateService.translate(text, "en", "pt");
+
+        // mantém estrutura original
+        String[] originalLines = text.split("\n");
+        String[] translatedLines = translated.split("\n");
+
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < originalLines.length; i++) {
+
+            String indent = originalLines[i].replaceAll("^(\\s*).*", "$1");
+
+            String linhaTraduzida = i < translatedLines.length
+                    ? translatedLines[i]
+                    : "";
+
+            result.append(indent).append(linhaTraduzida).append("\n");
+        }
+
+        return result.toString();
     }
 
     public static void main(String[] args) {
