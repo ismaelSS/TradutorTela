@@ -4,7 +4,9 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import space.dynomake.libretranslate.Language;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +27,7 @@ public class Main extends Application {
         selector.startSelection((x, y, w, h) -> {
             try {
                 BufferedImage img = ScreenCapture.capture(x, y, w, h);
+                ImageIO.write(img, "png", new File("debug.png"));
 
                 String rawText = textExtractor.extract(img);
 

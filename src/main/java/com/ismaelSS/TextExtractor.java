@@ -13,14 +13,14 @@ public class TextExtractor {
         tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
         tesseract.setLanguage("eng");
 
-        tesseract.setTessVariable("tessedit_char_whitelist",
+        tesseract.setVariable("tessedit_char_whitelist",
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,!? ");
 
         tesseract.setPageSegMode(6);
         tesseract.setOcrEngineMode(1);
 
-        tesseract.setTessVariable("preserve_interword_spaces", "1");
-        tesseract.setTessVariable("user_defined_dpi", "300");
+        tesseract.setVariable("preserve_interword_spaces", "1");
+        tesseract.setVariable("user_defined_dpi", "300");
     }
 
     public String extract(BufferedImage img) {

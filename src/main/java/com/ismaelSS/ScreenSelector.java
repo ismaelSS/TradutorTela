@@ -22,7 +22,7 @@ public class ScreenSelector {
         scene.setFill(Color.color(0, 0, 0, 0.3));
 
         Rectangle rect = new Rectangle();
-        rect.setStroke(Color.RED);
+        rect.setStroke(Color.YELLOW);
         rect.setFill(Color.color(1, 0, 0, 0.2));
 
         root.getChildren().add(rect);
@@ -57,7 +57,7 @@ public class ScreenSelector {
                     rect.getWidth(),
                     rect.getHeight()
             );
-
+            root.getChildren().remove(rect);
             stage.close();
         });
 
