@@ -4,6 +4,7 @@ import com.ismaelSS.translate.TranslateService;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import net.sourceforge.tess4j.Tesseract;
+import space.dynomake.libretranslate.Language;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+
 
         // 🔍 OCR setup
         tesseract = new Tesseract();
@@ -83,7 +85,7 @@ public class Main extends Application {
     // 🌍 traduz mantendo layout
     private String translatePreservingFormat(String text) {
         // 🔥 traduz tudo de uma vez
-        String translated = translateService.translate(text, "en", "pt");
+        String translated = translateService.translate(text, Language.ENGLISH, Language.PORTUGUESE);
 
         // mantém estrutura original
         String[] originalLines = text.split("\n");

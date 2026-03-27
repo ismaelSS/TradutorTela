@@ -16,7 +16,21 @@
         <graalvm.version>25.0.2</graalvm.version>
     </properties>
 
+
+    <repositories>
+        <repository>
+            <id>dynomakeRepository</id>
+            <url>https://maven.dynomake.it/releases</url>
+        </repository>
+    </repositories>
+
+
     <dependencies>
+        <dependency>
+            <groupId>space.dynomake</groupId>
+            <artifactId>libretranslate-java</artifactId>
+            <version>1.0.9</version>
+        </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>

@@ -1,56 +1,33 @@
 package com.ismaelSS.translate;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import space.dynomake.libretranslate.Language;
+import space.dynomake.libretranslate.Translator;
 
 public class TranslateService {
 
-    public String translate(String q, String source, String target) {
+    // 🔥 configura API UMA vez
+    static {
+        Translator.setUrlApi("http://localhost:5000/translate");
+    }
+
+    public String translate(String text, Language sourceLang, Language targetLang) {
         try {
-            if (q == null || q.trim().isEmpty()) return "";
 
-            // evita quebrar JSON
-            q = q.replace("\"", "'");
+            if (text == null || text.isBlank()) return "";
 
-            URL url = new URL("http://localhost:5000/translate");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-
-            String json = String.format(
-                    "{\"q\":\"%s\",\"source\":\"%s\",\"target\":\"%s\",\"format\":\"q\"}",
-                    q, source, target
+            // 🔥 chamada da lib (simples e limpa)
+            String result = Translator.translate(
+                    sourceLang,
+                    targetLang,
+                    text
             );
 
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(json.getBytes());
-            }
-
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream())
-            );
-
-            StringBuilder response = new StringBuilder();
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                response.append(line);
-            }
-
-            br.close();
-
-            return extract(response.toString());
+            return result != null ? result : text;
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return q; // fallback
+            System.out.println("ERRO TRADUÇÃO: " + e.getMessage());
+            return text; // fallback
         }
     }
 
-    private String extract(String json) {
-        return json.split(":\"")[1].replace("\"}", "");
-    }
 }
