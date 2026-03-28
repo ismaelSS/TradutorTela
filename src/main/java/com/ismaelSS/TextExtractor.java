@@ -2,8 +2,10 @@ package com.ismaelSS;
 
 import net.sourceforge.tess4j.Tesseract;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 public class TextExtractor {
 
@@ -25,8 +27,11 @@ public class TextExtractor {
 
     public String extract(BufferedImage img) {
         try {
-            img = upscale(img);
-            img = preprocess(img);
+//            img = upscale(img);
+//            ImageIO.write(img, "png", new File("debug2.png"));
+            ImageIO.write(img, "png", new File("contrast.png"));
+            img = adjustContrast(img,5f);
+            ImageIO.write(img, "png", new File("contrat12.png"));
 
             return tesseract.doOCR(img);
 
@@ -65,30 +70,98 @@ public class TextExtractor {
     }
 
     private BufferedImage preprocess(BufferedImage img) {
-
-        BufferedImage gray = new BufferedImage(
+        BufferedImage result = new BufferedImage(
                 img.getWidth(),
                 img.getHeight(),
                 BufferedImage.TYPE_BYTE_GRAY
         );
 
-        Graphics g = gray.getGraphics();
-        g.drawImage(img, 0, 0, null);
-        g.dispose();
+        for (int y = 0; y < img.getHeight(); y++) {
+            for (int x = 0; x < img.getWidth(); x++) {
 
-        for (int y = 0; y < gray.getHeight(); y++) {
-            for (int x = 0; x < gray.getWidth(); x++) {
+                int rgb = img.getRGB(x, y);
 
-                int pixel = gray.getRGB(x, y) & 0xFF;
+                // Extract RGB components
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
 
-                if (pixel < 140) {
-                    gray.setRGB(x, y, 0x000000);
+                // Convert RGB to HSL
+                float[] hsl = rgbToHsl(r, g, b);
+                float lightness = hsl[2]; // Lightness component (0-1)
+
+                // Apply threshold based on lightness
+                if (lightness < 0.55f) { // 0.55 corresponds approximately to 140 in grayscale
+                    result.setRGB(x, y, 0x000000);
                 } else {
-                    gray.setRGB(x, y, 0xFFFFFF);
+                    result.setRGB(x, y, 0xFFFFFF);
                 }
             }
         }
 
-        return gray;
+        return result;
     }
+
+    private float[] rgbToHsl(int r, int g, int b) {
+        float rf = r / 255.0f;
+        float gf = g / 255.0f;
+        float bf = b / 255.0f;
+
+        float max = Math.max(rf, Math.max(gf, bf));
+        float min = Math.min(rf, Math.min(gf, bf));
+        float delta = max - min;
+
+        // Calculate Hue
+        float hue = 0;
+        if (delta != 0) {
+            if (max == rf) {
+                hue = (gf - bf) / delta;
+            } else if (max == gf) {
+                hue = 2 + (bf - rf) / delta;
+            } else {
+                hue = 4 + (rf - gf) / delta;
+            }
+            hue *= 60;
+            if (hue < 0) hue += 360;
+        }
+
+        // Calculate Lightness
+        float lightness = (max + min) / 2;
+
+        // Calculate Saturation
+        float saturation = 0;
+        if (delta != 0) {
+            saturation = delta / (1 - Math.abs(2 * lightness - 1));
+        }
+
+        return new float[] {hue, saturation, lightness};
+    }
+
+    public static BufferedImage adjustContrast(BufferedImage image, float contrast) {
+        BufferedImage result = new BufferedImage(
+                image.getWidth(),
+                image.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+        );
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                Color color = new Color(image.getRGB(x, y));
+
+                int r = adjustChannel(color.getRed(), contrast);
+                int g = adjustChannel(color.getGreen(), contrast);
+                int b = adjustChannel(color.getBlue(), contrast);
+
+                result.setRGB(x, y, new Color(r, g, b).getRGB());
+            }
+        }
+
+        return result;
+    }
+
+    private static int adjustChannel(int value, float contrast) {
+        int adjusted = (int) ((value - 128) * contrast + 128);
+        return Math.max(0, Math.min(255, adjusted));
+    }
+
 }

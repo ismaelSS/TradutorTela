@@ -11,7 +11,7 @@ public class ScreenCapture {
         double scaleY = Screen.getPrimary().getOutputScaleY();
         Rectangle area = new Rectangle(
                 (int) (x * scaleX),
-                (int) ((y-13) * scaleY),
+                (int) ((y-14) * scaleY),
                 (int) ((w + 1)* scaleX),
                 (int) ((h + 1) * scaleY)
         );

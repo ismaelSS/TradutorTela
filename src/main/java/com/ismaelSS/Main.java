@@ -27,7 +27,6 @@ public class Main extends Application {
         selector.startSelection((x, y, w, h) -> {
             try {
                 BufferedImage img = ScreenCapture.capture(x, y, w, h);
-                ImageIO.write(img, "png", new File("debug.png"));
 
                 String rawText = textExtractor.extract(img);
 
