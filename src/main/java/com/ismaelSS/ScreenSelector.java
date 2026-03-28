@@ -1,5 +1,6 @@
 package com.ismaelSS;
 
+import com.ismaelSS.layouts.Region;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -51,15 +52,17 @@ public class ScreenSelector {
         });
 
         scene.setOnMouseReleased(e -> {
-            root.getChildren().remove(rect);
+
+            Region region = new Region(
+                    (int) rect.getX(),
+                    (int) rect.getY(),
+                    (int) rect.getWidth(),
+                    (int) rect.getHeight()
+            );
+
             stage.close();
 
-            callback.onSelect(
-                    rect.getX(),
-                    rect.getY(),
-                    rect.getWidth(),
-                    rect.getHeight()
-            );
+            callback.onSelect(region);
         });
 
         stage.initStyle(StageStyle.TRANSPARENT);

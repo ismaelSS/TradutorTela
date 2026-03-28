@@ -1,5 +1,7 @@
 package com.ismaelSS;
 
+
+import com.ismaelSS.layouts.Region;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import space.dynomake.libretranslate.Language;
@@ -19,26 +21,36 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+
         textExtractor = new TextExtractor();
         translateService = new TranslateService();
-
         ScreenSelector selector = new ScreenSelector();
 
-        selector.startSelection((x, y, w, h) -> {
+        selector.startSelection(region -> {
+
             try {
-                BufferedImage img = ScreenCapture.capture(x, y, w, h);
+                System.out.println("==== REGIÃO ====");
+                System.out.println("X: " + region.getX());
+                System.out.println("Y: " + region.getY());
+                System.out.println("W: " + region.getWidth());
+                System.out.println("H: " + region.getHeight());
+
+                BufferedImage img = ScreenCapture.capture(region);
 
                 String rawText = textExtractor.extract(img);
 
-                String processedText = processText(rawText);
-
                 System.out.println("==== ORIGINAL ====");
-                System.out.println(processedText);
+                System.out.println(rawText);
 
-                String translatedText = translatePreservingFormat(processedText);
+                String processed = processText(rawText);
+
+                String translated = cache.computeIfAbsent(
+                        processed,
+                        t -> translatePreservingFormat(t)
+                );
 
                 System.out.println("==== TRADUZIDO ====");
-                System.out.println(translatedText);
+                System.out.println(translated);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -68,7 +80,11 @@ public class Main extends Application {
 
     private String translatePreservingFormat(String text) {
 
-        String translated = translateService.translate(text, Language.ENGLISH, Language.PORTUGUESE);
+        String translated = translateService.translate(
+                text,
+                Language.ENGLISH,
+                Language.PORTUGUESE
+        );
 
         String[] originalLines = text.split("\n");
         String[] translatedLines = translated.split("\n");
@@ -83,7 +99,9 @@ public class Main extends Application {
                     ? translatedLines[i]
                     : "";
 
-            result.append(indent).append(linhaTraduzida).append("\n");
+            result.append(indent)
+                    .append(linhaTraduzida)
+                    .append("\n");
         }
 
         return result.toString();

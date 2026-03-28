@@ -1,20 +1,34 @@
 package com.ismaelSS;
+
+import com.ismaelSS.layouts.Region;
 import javafx.stage.Screen;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class ScreenCapture {
-    public static BufferedImage capture(double x, double y, double w, double h) throws Exception {
-        Robot robot = new Robot();
+
+    private static final Robot robot;
+
+    static {
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static BufferedImage capture(Region region) {
+
         double scaleX = Screen.getPrimary().getOutputScaleX();
         double scaleY = Screen.getPrimary().getOutputScaleY();
-        Rectangle area = new Rectangle(
-                (int) (x * scaleX),
-                (int) ((y-14) * scaleY),
-                (int) ((w + 1)* scaleX),
-                (int) ((h + 1) * scaleY)
-        );
+
+        int realX = (int) (region.getX() * scaleX);
+        int realY = (int) (region.getY() * scaleY) -14;
+        int realW = (int) (region.getWidth() * scaleX) +1;
+        int realH = (int) (region.getHeight() * scaleY)+1;
+
+        Rectangle area = new Rectangle(realX, realY, realW, realH);
 
         return robot.createScreenCapture(area);
     }

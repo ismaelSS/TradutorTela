@@ -27,11 +27,10 @@ public class TextExtractor {
 
     public String extract(BufferedImage img) {
         try {
-//            img = upscale(img);
-//            ImageIO.write(img, "png", new File("debug2.png"));
-            ImageIO.write(img, "png", new File("contrast.png"));
+
+            ImageIO.write(img, "png", new File("original.png"));
             img = adjustContrast(img,5f);
-            ImageIO.write(img, "png", new File("contrat12.png"));
+            ImageIO.write(img, "png", new File("contrat5.png"));
 
             return tesseract.doOCR(img);
 

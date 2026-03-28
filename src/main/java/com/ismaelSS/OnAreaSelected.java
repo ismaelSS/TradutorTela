@@ -1,5 +1,7 @@
 package com.ismaelSS;
 
+import com.ismaelSS.layouts.Region;
+
 public interface OnAreaSelected {
-    void onSelect(double x, double y, double w, double h);
+    void onSelect(Region region);
 }
