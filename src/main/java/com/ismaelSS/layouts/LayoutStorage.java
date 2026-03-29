@@ -1,24 +1,38 @@
-package com.ismaelSS.layouts;
+package com.ismaelSS.storage;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ismaelSS.layouts.Layout;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LayoutStorage {
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final File file = new File("layouts.json");
 
-    public static void save(List<Layout> layouts) throws Exception {
-        mapper.writerWithDefaultPrettyPrinter().writeValue(file, layouts);
+    private static final String FILE = "layouts.json";
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static void save(List<Layout> layouts) {
+        try {
+            mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(new File(FILE), layouts);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public static List<Layout> load() throws Exception {
-        if (!file.exists()) return List.of();
+    public static List<Layout> load() {
+        try {
+            File file = new File(FILE);
 
-        return Arrays.asList(
-                mapper.readValue(file, Layout[].class)
-        );
+            if (!file.exists()) return new ArrayList<>();
+
+            return mapper.readValue(file, new TypeReference<>() {});
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 }

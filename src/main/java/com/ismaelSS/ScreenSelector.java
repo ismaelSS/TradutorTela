@@ -27,6 +27,8 @@ public class ScreenSelector {
         rect.setFill(Color.color(1, 0, 0, 0.2));
 
         root.getChildren().add(rect);
+        root.setStyle("-fx-background-color: transparent;");
+
 
         final double[] startX = new double[1];
         final double[] startY = new double[1];

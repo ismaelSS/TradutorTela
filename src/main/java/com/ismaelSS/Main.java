@@ -1,14 +1,12 @@
 package com.ismaelSS;
 
 
-import com.ismaelSS.layouts.Region;
+import com.ismaelSS.layoutManagerView.LayoutManagerView;
 import javafx.application.Application;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 import space.dynomake.libretranslate.Language;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,40 +20,18 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
 
+        LayoutManagerView view = new LayoutManagerView();
+
+        Scene scene = new Scene(view, 600, 400);
+        scene.getStylesheets().add("/styles/layoutManagerView.css");
+
+        primaryStage.setTitle("Tradutor de Tela");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
         textExtractor = new TextExtractor();
         translateService = new TranslateService();
-        ScreenSelector selector = new ScreenSelector();
 
-        selector.startSelection(region -> {
-
-            try {
-                System.out.println("==== REGIÃO ====");
-                System.out.println("X: " + region.getX());
-                System.out.println("Y: " + region.getY());
-                System.out.println("W: " + region.getWidth());
-                System.out.println("H: " + region.getHeight());
-
-                BufferedImage img = ScreenCapture.capture(region);
-
-                String rawText = textExtractor.extract(img);
-
-                System.out.println("==== ORIGINAL ====");
-                System.out.println(rawText);
-
-                String processed = processText(rawText);
-
-                String translated = cache.computeIfAbsent(
-                        processed,
-                        t -> translatePreservingFormat(t)
-                );
-
-                System.out.println("==== TRADUZIDO ====");
-                System.out.println(translated);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     private String processText(String text) {

@@ -16,7 +16,7 @@ public class TextExtractor {
         tesseract.setLanguage("eng");
 
         tesseract.setVariable("tessedit_char_whitelist",
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,!? ");
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,!?:;");
 
         tesseract.setPageSegMode(6);
         tesseract.setOcrEngineMode(1);
