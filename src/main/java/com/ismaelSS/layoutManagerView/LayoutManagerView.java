@@ -46,13 +46,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
     private Map<Region, OverlayWindow> overlays = new HashMap<>();
     private OverlayWindow quickOverlay; // Tradução rápida por atalho
 
-    // Gerenciamento de timeouts para overlays
-    private ScheduledExecutorService cleanupExecutor;
-    private Map<Region, ScheduledFuture<?>> overlayTimeouts = new HashMap<>();
-
-    // Tempo para manter overlay visível (em milissegundos)
-    private static final int OVERLAY_DISPLAY_TIME = 3000; // 3 segundos
-
     // Estado e Controle
     private boolean isRunning = false;
     private long selectedHwnd = 0;
@@ -70,7 +63,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         loadData();
         initGlobalHotkeys();
         startLoop();
-        startCleanupService();
     }
 
     private void setupUI() {
@@ -140,7 +132,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         });
 
         refreshWindowList();
-        setupWindowMonitoring();
     }
 
     private void toggleTranslation() {
@@ -171,33 +162,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         comboWindows.setItems(windowList);
     }
 
-    private void setupWindowMonitoring() {
-        comboWindows.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                selectedHwnd = newVal.hwnd;
-                // Limpar overlays ao mudar de janela
-                clearOverlays();
-            }
-        });
-
-        // Verificar periodicamente se a janela ainda está ativa
-        if (executor != null) {
-            executor.scheduleAtFixedRate(() -> {
-                if (selectedHwnd != 0 && !isWindowActive(selectedHwnd)) {
-                    Platform.runLater(() -> {
-                        clearOverlays();
-                        selectedHwnd = 0;
-                        comboWindows.getSelectionModel().clearSelection();
-                    });
-                }
-            }, 0, 2, TimeUnit.SECONDS);
-        }
-    }
-
-    private boolean isWindowActive(long hwnd) {
-        return User32.INSTANCE.IsWindowVisible(new Pointer(hwnd));
-    }
-
     private void startLoop() {
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(() -> {
@@ -207,10 +171,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
                 processSingleRegion(region, false);
             }
         }, 0, 1500, TimeUnit.MILLISECONDS);
-    }
-
-    private void startCleanupService() {
-        cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
     }
 
     private void processSingleRegion(Region region, boolean isQuickAction) {
@@ -225,21 +185,14 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
 
                     Platform.runLater(() -> {
                         if (isQuickAction) {
-                            // Para tradução rápida, mostrar e agendar fechamento
                             if (quickOverlay != null) quickOverlay.hideOverlay();
                             quickOverlay = new OverlayWindow(region);
                             quickOverlay.updateText(translated);
                             quickOverlay.showOverlay();
-
-                            // Agendar fechamento automático
-                            scheduleQuickOverlayClose();
                         } else {
                             OverlayWindow overlay = overlays.computeIfAbsent(region, r -> new OverlayWindow(r));
                             overlay.updateText(translated);
                             overlay.showOverlay();
-
-                            // Para traduções contínuas, agendar fechamento se não houver novas atualizações
-                            scheduleOverlayClosure(overlay, region);
                         }
                     });
                 }
@@ -247,39 +200,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
                 e.printStackTrace();
             }
         });
-    }
-
-    private void scheduleOverlayClosure(OverlayWindow overlay, Region region) {
-        // Cancelar timeout anterior se existir
-        ScheduledFuture<?> existingTimeout = overlayTimeouts.get(region);
-        if (existingTimeout != null && !existingTimeout.isDone()) {
-            existingTimeout.cancel(false);
-        }
-
-        // Agendar novo fechamento
-        ScheduledFuture<?> timeout = cleanupExecutor.schedule(() -> {
-            Platform.runLater(() -> {
-                // Verificar se a região ainda está ativa e se não houve nova atualização
-                if (overlays.get(region) == overlay) {
-                    overlay.hideOverlay();
-                    overlays.remove(region);
-                }
-                overlayTimeouts.remove(region);
-            });
-        }, OVERLAY_DISPLAY_TIME, TimeUnit.MILLISECONDS);
-
-        overlayTimeouts.put(region, timeout);
-    }
-
-    private void scheduleQuickOverlayClose() {
-        cleanupExecutor.schedule(() -> {
-            Platform.runLater(() -> {
-                if (quickOverlay != null) {
-                    quickOverlay.hideOverlay();
-                    quickOverlay = null;
-                }
-            });
-        }, OVERLAY_DISPLAY_TIME, TimeUnit.MILLISECONDS);
     }
 
     private void initGlobalHotkeys() {
@@ -304,12 +224,11 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         final int QUICK_TRANSLATE_KEY = NativeKeyEvent.VC_1;
         final int CLOSE_OVERLAY_KEY = NativeKeyEvent.VC_2;
         final int TOGLE_TRANSLATE_STATE = NativeKeyEvent.VC_3;
-        final int CLOSE_ALL_OVERLAYS_KEY = NativeKeyEvent.VC_0;
 
-        // Modificadores padrão (SHIFT)
+        // Modificadores padrão (CTRL + SHIFT)
         final int REQUIRED_MODIFIERS = NativeKeyEvent.SHIFT_L_MASK;
 
-        // Atalho: SHIFT + 1 (Selecionar e Traduzir agora)
+        // Atalho: CTRL + SHIFT + S (Selecionar e Traduzir agora)
         boolean modifiers = (e.getModifiers() & REQUIRED_MODIFIERS) == REQUIRED_MODIFIERS;
 
         // Atalho para selecionar e traduzir
@@ -330,17 +249,9 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
                 }
             });
         }
-
-        // Atalho para iniciar e pausar traduções contínuas
+        // Atalho para iniciar e pausar traducoes continuas
         if (modifiers && e.getKeyCode() == TOGLE_TRANSLATE_STATE) {
             Platform.runLater(this::toggleTranslation);
-        }
-
-        // Atalho para fechar todos os overlays
-        if (modifiers && e.getKeyCode() == CLOSE_ALL_OVERLAYS_KEY) {
-            Platform.runLater(() -> {
-                clearOverlays();
-            });
         }
     }
 
@@ -350,23 +261,9 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
     // --- MÉTODOS DE DADOS ---
 
     private void clearOverlays() {
-        // Cancelar todos os timeouts pendentes
-        for (ScheduledFuture<?> timeout : overlayTimeouts.values()) {
-            if (timeout != null && !timeout.isDone()) {
-                timeout.cancel(false);
-            }
-        }
-        overlayTimeouts.clear();
-
-        // Fechar overlays contínuos
         overlays.values().forEach(OverlayWindow::hideOverlay);
         overlays.clear();
-
-        // Fechar overlay rápido
-        if (quickOverlay != null) {
-            quickOverlay.hideOverlay();
-            quickOverlay = null;
-        }
+        if (quickOverlay != null) quickOverlay.hideOverlay();
     }
 
     private void loadData() {
@@ -412,20 +309,6 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
             selectedLayout.getRegions().remove(selectedRegion);
             regions.setAll(selectedLayout.getRegions());
             LayoutStorage.save(layouts);
-        }
-    }
-
-    // Método para encerrar recursos quando a aplicação for fechada
-    public void shutdown() {
-        clearOverlays();
-        if (cleanupExecutor != null) {
-            cleanupExecutor.shutdown();
-        }
-        if (executor != null) {
-            executor.shutdown();
-        }
-        if (workerPool != null) {
-            workerPool.shutdown();
         }
     }
 
