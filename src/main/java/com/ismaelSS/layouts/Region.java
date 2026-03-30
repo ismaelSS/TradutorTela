@@ -1,5 +1,7 @@
 package com.ismaelSS.layouts;
 
+import java.awt.*;
+
 public class Region {
     private double x, y, width, height;
 

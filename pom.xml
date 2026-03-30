@@ -1,7 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ismaelSS</groupId>
@@ -9,13 +8,11 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javafx.version>26</javafx.version>
-        <graalvm.version>25.0.2</graalvm.version>
+        <javafx.version>21</javafx.version>
     </properties>
-
 
     <repositories>
         <repository>
@@ -24,51 +21,55 @@
         </repository>
     </repositories>
 
-
     <dependencies>
+
+        <!-- LibreTranslate -->
         <dependency>
             <groupId>space.dynomake</groupId>
             <artifactId>libretranslate-java</artifactId>
             <version>1.0.9</version>
         </dependency>
-        <dependency>
-            <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>polyglot</artifactId>
-            <version>${graalvm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>python</artifactId>
-            <version>${graalvm.version}</version>
-            <type>pom</type>
-        </dependency>
+
+        <!-- JavaFX -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- OCR -->
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
             <version>5.3.0</version>
-            <scope>compile</scope>
         </dependency>
+
+        <!-- JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.17.0</version>
         </dependency>
+
+        <!-- JNA -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.12.1</version>
+            <artifactId>jna-platform</artifactId>
+            <version>5.18.1</version>
+            <scope>compile</scope>
         </dependency>
-
 
     </dependencies>
 
@@ -79,28 +80,13 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>Main</mainClass>
+                    <mainClass>com.ismaelSS.Main</mainClass>
+                    <options>
+                        <option>--add-modules</option>
+                        <option>javafx.controls,javafx.fxml</option>
+                    </options>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.graalvm.python</groupId>
-                <artifactId>graalpy-maven-plugin</artifactId>
-                <version>${graalvm.version}</version>
-                <configuration>
-                    <packages>
-                        <package>termcolor==2.2</package>
-                        <package>numpy</package>
-                    </packages>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>process-resources</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 

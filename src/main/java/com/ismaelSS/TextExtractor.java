@@ -1,6 +1,7 @@
 package com.ismaelSS;
 
 import net.sourceforge.tess4j.Tesseract;
+import space.dynomake.libretranslate.Language;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -29,8 +30,8 @@ public class TextExtractor {
         try {
 
             ImageIO.write(img, "png", new File("original.png"));
-            img = adjustContrast(img,5f);
-            ImageIO.write(img, "png", new File("contrat5.png"));
+//            img = adjustContrast(img,5f);
+//            ImageIO.write(img, "png", new File("contrat5.png"));
 
             return tesseract.doOCR(img);
 

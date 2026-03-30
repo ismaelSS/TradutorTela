@@ -7,12 +7,16 @@ import com.ismaelSS.TranslateService;
 import com.ismaelSS.layouts.Layout;
 import com.ismaelSS.layouts.Region;
 import com.ismaelSS.storage.LayoutStorage;
+import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import space.dynomake.libretranslate.Language;
 
@@ -30,198 +34,143 @@ public class LayoutManagerView extends BorderPane {
     private ListView<Region> regionList = new ListView<>(regions);
 
     private ScreenSelector screenSelector = new ScreenSelector();
+    private TextExtractor textExtractor = new TextExtractor();
+    private TranslateService translateService = new TranslateService();
 
-    private ExecutorService workerPool = Executors.newFixedThreadPool(4);
-
-
-    // 🔥 MOTOR
-    private ScheduledExecutorService executor;
-    private boolean running = false;
-
-    // 🔥 OCR + tradução
-    private TextExtractor extractor = new TextExtractor();
-    private TranslateService translator = new TranslateService();
-
-    // 🔥 overlays ativos
+    // Map para controlar as janelas de overlay abertas
     private Map<Region, OverlayWindow> overlays = new HashMap<>();
 
+    // Gerenciamento de Janela Alvo
+    private ComboBox<WindowItem> comboWindows = new ComboBox<>();
+    private long selectedHwnd = 0;
+
+    private final ExecutorService workerPool = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors()
+    );
+
+    private ScheduledExecutorService executor;
+
     public LayoutManagerView() {
+        setupUI();
+        loadData();
+        startLoop();
+    }
 
-        layouts.addAll(LayoutStorage.load());
+    private void setupUI() {
+        setPadding(new Insets(10));
 
-        // =========================
-        // LEFT — Layouts
-        // =========================
-        VBox left = new VBox(10);
-        left.setPadding(new Insets(10));
+        // --- PAINEL SUPERIOR (Seleção de Janela) ---
+        HBox topPanel = new HBox(10);
+        topPanel.setPadding(new Insets(0, 0, 10, 0));
 
-        Button addLayout = new Button("+ Layout");
-        Button removeLayout = new Button("- Layout");
+        Button btnRefresh = new Button("🔄 Atualizar Janelas");
+        comboWindows.setPromptText("Selecione a janela alvo...");
+        comboWindows.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(comboWindows, javafx.scene.layout.Priority.ALWAYS);
 
-        layoutList.setPrefWidth(200);
+        btnRefresh.setOnAction(e -> refreshWindowList());
+        comboWindows.setOnAction(e -> {
+            WindowItem selected = comboWindows.getSelectionModel().getSelectedItem();
+            if (selected != null) selectedHwnd = selected.hwnd;
+        });
 
-        left.getChildren().addAll(addLayout, removeLayout, layoutList);
+        topPanel.getChildren().addAll(comboWindows, btnRefresh);
+        setTop(topPanel);
 
-        // =========================
-        // CENTER — Regions
-        // =========================
-        VBox center = new VBox(10);
-        center.setPadding(new Insets(10));
+        // --- PAINEL LATERAL (Layouts) ---
+        VBox leftBox = new VBox(5);
+        leftBox.getChildren().addAll(new Label("Layouts:"), layoutList);
 
-        Button addRegion = new Button("+ Região");
-        Button removeRegion = new Button("- Região");
+        Button btnAddLayout = new Button("Novo Layout");
+        Button btnRemoveLayout = new Button("Remover Layout");
+        btnAddLayout.setOnAction(e -> addLayout());
+        btnRemoveLayout.setOnAction(e -> removeLayout());
 
-        regionList.setPrefWidth(300);
+        leftBox.getChildren().addAll(btnAddLayout, btnRemoveLayout);
+        setLeft(leftBox);
 
-        Button play = new Button("▶ Play");
-        Button pause = new Button("⏸ Pause");
+        // --- PAINEL CENTRAL (Regiões) ---
+        VBox centerBox = new VBox(5);
+        centerBox.getChildren().addAll(new Label("Regiões no Layout:"), regionList);
 
-        center.getChildren().addAll(addRegion, removeRegion, play, pause, regionList);
+        Button btnAddRegion = new Button("Selecionar Área na Tela");
+        Button btnRemoveRegion = new Button("Remover Região");
+        btnAddRegion.setOnAction(e -> addRegionToSelectedLayout());
+        btnRemoveRegion.setOnAction(e -> removeRegion());
 
-        setLeft(left);
-        setCenter(center);
+        centerBox.getChildren().addAll(btnAddRegion, btnRemoveRegion);
+        setCenter(centerBox);
 
-        // =========================
-        // EVENTOS
-        // =========================
-
-        layoutList.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
-            if (selected != null) {
-                regions.setAll(selected.getRegions());
-            } else {
-                regions.clear();
+        // Sincronizar listas
+        layoutList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                regions.setAll(newVal.getRegions());
+                clearOverlays();
             }
         });
 
-        addLayout.setOnAction(e -> createLayout());
-        removeLayout.setOnAction(e -> removeLayout());
-
-        addRegion.setOnAction(e -> addRegionToSelectedLayout());
-        removeRegion.setOnAction(e -> removeRegion());
-
-        play.setOnAction(e -> startExecution());
-        pause.setOnAction(e -> stopExecution());
+        refreshWindowList();
     }
 
-    // =========================
-    // 🔥 START
-    // =========================
-    private void startExecution() {
+    private void refreshWindowList() {
+        ObservableList<WindowItem> windowList = FXCollections.observableArrayList();
+        User32.INSTANCE.EnumWindows((hwnd, pointer) -> {
+            if (User32.INSTANCE.IsWindowVisible(hwnd)) {
+                char[] windowText = new char[512];
+                User32.INSTANCE.GetWindowText(hwnd, windowText, 512);
+                String title = new String(windowText).trim();
 
-        if (running) return;
+                // Filtramos janelas vazias e o nosso próprio programa
+                if (!title.isEmpty() && !title.equals("Tradutor de Tela")) {
+                    windowList.add(new WindowItem(title, Pointer.nativeValue(hwnd.getPointer())));
+                }
+            }
+            return true;
+        }, null);
+        comboWindows.setItems(windowList);
+    }
 
-        Layout selected = layoutList.getSelectionModel().getSelectedItem();
-
-        if (selected == null) {
-            showAlert("Selecione um layout primeiro!");
-            return;
-        }
-
-        running = true;
-
-        // 🔥 cria overlays UMA VEZ
-        overlays.clear();
-        for (Region region : selected.getRegions()) {
-            overlays.put(region, new OverlayWindow(region));
-        }
-
+    private void startLoop() {
         executor = Executors.newSingleThreadScheduledExecutor();
-
         executor.scheduleAtFixedRate(() -> {
+            if (selectedHwnd == 0 || regions.isEmpty()) return;
 
-            try {
+            for (Region region : regions) {
+                workerPool.submit(() -> {
+                    try {
+                        // Captura apenas da janela alvo
+                        BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
+                        String text = textExtractor.extract(img).trim();
 
-                // =========================
-                // 🔥 FASE 1 — CAPTURA RÁPIDA
-                // =========================
+                        if (!text.isEmpty()) {
+                            String translated = translateService.translate(text, Language.ENGLISH, Language.PORTUGUESE);
 
-                Platform.runLater(() -> {
-                    overlays.values().forEach(OverlayWindow::hideOverlay);
-                });
-
-                Thread.sleep(40); // mínimo possível
-
-                Map<Region, BufferedImage> captures = new HashMap<>();
-
-                for (Region region : selected.getRegions()) {
-                    BufferedImage img = ScreenCapture.capture(region);
-                    captures.put(region, img);
-                }
-
-                // 🔥 mostra overlays IMEDIATAMENTE
-                Platform.runLater(() -> {
-                    overlays.values().forEach(OverlayWindow::showOverlay);
-                });
-
-                // =========================
-                // 🔥 FASE 2 — PROCESSAMENTO PARALELO
-                // =========================
-
-                for (Map.Entry<Region, BufferedImage> entry : captures.entrySet()) {
-
-                    Region region = entry.getKey();
-                    BufferedImage img = entry.getValue();
-
-                    workerPool.submit(() -> {
-
-                        try {
-                            String text = extractor.extract(img);
-
-                            String translated = translator.translate(
-                                    text,
-                                    Language.ENGLISH,
-                                    Language.PORTUGUESE
-                            );
-
-                            OverlayWindow overlay = overlays.get(region);
-
-                            if (overlay != null) {
-                                Platform.runLater(() -> overlay.updateText(translated));
-                            }
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            Platform.runLater(() -> {
+                                OverlayWindow overlay = overlays.computeIfAbsent(region, r -> new OverlayWindow(r));
+                                overlay.updateText(translated);
+                                overlay.showOverlay();
+                            });
                         }
-                    });
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
             }
-
-        }, 0, 2, TimeUnit.SECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
     }
 
-    // =========================
-    // 🔥 STOP
-    // =========================
-    private void stopExecution() {
-
-        running = false;
-
-        // 🔥 para thread
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdownNow();
-        }
-
-        // 🔥 fecha overlays
-        overlays.values().forEach(overlay -> {
-            Platform.runLater(overlay::close);
-        });
-
+    private void clearOverlays() {
+        overlays.values().forEach(OverlayWindow::hideOverlay);
         overlays.clear();
-
-        System.out.println("Execução parada.");
     }
 
-    // =========================
-    // CRUD
-    // =========================
+    private void loadData() {
+        layouts.setAll(LayoutStorage.load());
+    }
 
-    private void createLayout() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText("Nome do layout");
-
+    // --- Métodos de CRUD de Layout (Baseados no seu código original) ---
+    private void addLayout() {
+        TextInputDialog dialog = new TextInputDialog("Novo Layout");
         dialog.showAndWait().ifPresent(name -> {
             Layout layout = new Layout(name);
             layouts.add(layout);
@@ -231,49 +180,43 @@ public class LayoutManagerView extends BorderPane {
 
     private void removeLayout() {
         Layout selected = layoutList.getSelectionModel().getSelectedItem();
-
         if (selected != null) {
             layouts.remove(selected);
             regions.clear();
             LayoutStorage.save(layouts);
+            clearOverlays();
         }
     }
 
     private void addRegionToSelectedLayout() {
-
         Layout selected = layoutList.getSelectionModel().getSelectedItem();
-
-        if (selected == null) {
-            showAlert("Selecione um layout primeiro!");
-            return;
-        }
+        if (selected == null) return;
 
         screenSelector.startSelection(region -> {
-
             selected.getRegions().add(region);
             regions.setAll(selected.getRegions());
-
             LayoutStorage.save(layouts);
         });
     }
 
     private void removeRegion() {
-
         Layout selectedLayout = layoutList.getSelectionModel().getSelectedItem();
         Region selectedRegion = regionList.getSelectionModel().getSelectedItem();
-
         if (selectedLayout != null && selectedRegion != null) {
-
             selectedLayout.getRegions().remove(selectedRegion);
             regions.setAll(selectedLayout.getRegions());
-
             LayoutStorage.save(layouts);
         }
     }
 
-    private void showAlert(String msg) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setHeaderText(msg);
-        alert.showAndWait();
+    // Classe auxiliar para o ComboBox
+    private static class WindowItem {
+        String title;
+        long hwnd;
+        WindowItem(String title, long hwnd) {
+            this.title = title;
+            this.hwnd = hwnd;
+        }
+        @Override public String toString() { return title; }
     }
 }
