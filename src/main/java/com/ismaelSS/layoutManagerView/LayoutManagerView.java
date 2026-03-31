@@ -1,9 +1,6 @@
 package com.ismaelSS.layoutManagerView;
 
-import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeHookException;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.ismaelSS.HotkeyManager;
 import com.ismaelSS.ScreenCapture;
 import com.ismaelSS.ScreenSelector;
 import com.ismaelSS.TextExtractor;
@@ -18,69 +15,83 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import space.dynomake.libretranslate.Language;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class LayoutManagerView extends BorderPane implements NativeKeyListener {
+public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCallbacks {
 
+    // --- Dados e Listas ---
     private ObservableList<Layout> layouts = FXCollections.observableArrayList();
     private ObservableList<Region> regions = FXCollections.observableArrayList();
+    private Map<Region, OverlayWindow> overlays = new HashMap<>();
+    private OverlayWindow quickOverlay;
 
+    // --- Componentes de UI ---
     private ListView<Layout> layoutList = new ListView<>(layouts);
     private ListView<Region> regionList = new ListView<>(regions);
+    private ComboBox<WindowItem> comboWindows = new ComboBox<>();
+    private Button btnPlayPause;
 
+    // --- Configurações de Tradução ---
+    private Language sourceLang = Language.ENGLISH;
+    private Language targetLang = Language.PORTUGUESE;
+
+    // --- Serviços e Motores ---
     private ScreenSelector screenSelector = new ScreenSelector();
     private TextExtractor textExtractor = new TextExtractor();
     private TranslateService translateService = new TranslateService();
+    private HotkeyManager hotkeyManager;
 
-    // Gerenciamento de Overlays
-    private Map<Region, OverlayWindow> overlays = new HashMap<>();
-    private OverlayWindow quickOverlay; // Tradução rápida por atalho
-
-    // Estado e Controle
     private boolean isRunning = false;
     private long selectedHwnd = 0;
-    private ComboBox<WindowItem> comboWindows = new ComboBox<>();
-    private Button btnPlayPause;
 
     private final ExecutorService workerPool = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors()
     );
-
     private ScheduledExecutorService executor;
 
     public LayoutManagerView() {
-        setupUI();
+        // Inicializa o gerenciador de teclas (thread separada)
+        this.hotkeyManager = new HotkeyManager(this);
+
+        setupTabs();
         loadData();
-        initGlobalHotkeys();
         startLoop();
     }
 
-    private void setupUI() {
-        setPadding(new Insets(10));
+    private void setupTabs() {
+        // Aba 1: Painel de Controle
+        Tab tabControl = new Tab("Painel de Controle", createMainPanel());
+        tabControl.setClosable(false);
 
-        // --- PAINEL SUPERIOR (Controles de Janela e Play) ---
-        HBox topPanel = new HBox(10);
-        topPanel.setPadding(new Insets(0, 0, 10, 0));
+        // Aba 2: Configurações
+        Tab tabSettings = new Tab("Configurações", createSettingsPanel());
+        tabSettings.setClosable(false);
+
+        this.getTabs().addAll(tabControl, tabSettings);
+    }
+
+    private BorderPane createMainPanel() {
+        BorderPane pane = new BorderPane();
+        pane.setPadding(new Insets(15));
+
+        // TOPO: Seleção de Janela e Play/Pause
+        HBox topBox = new HBox(10);
+        topBox.setPadding(new Insets(0, 0, 15, 0));
 
         comboWindows.setPromptText("Selecione a janela alvo...");
+        HBox.setHgrow(comboWindows, Priority.ALWAYS);
         comboWindows.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(comboWindows, javafx.scene.layout.Priority.ALWAYS);
 
         Button btnRefresh = new Button("🔄");
         btnRefresh.setOnAction(e -> refreshWindowList());
 
-        btnPlayPause = new Button("▶ Iniciar");
-        btnPlayPause.setMinWidth(100);
+        btnPlayPause = new Button("▶ Iniciar Tradução");
         btnPlayPause.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnPlayPause.setOnAction(e -> toggleTranslation());
 
@@ -89,42 +100,39 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
             if (selected != null) selectedHwnd = selected.hwnd;
         });
 
-        topPanel.getChildren().addAll(new Label("Alvo:"), comboWindows, btnRefresh, btnPlayPause);
-        setTop(topPanel);
+        topBox.getChildren().addAll(new Label("Alvo:"), comboWindows, btnRefresh, btnPlayPause);
+        pane.setTop(topBox);
 
-        // --- PAINEL LATERAL (Layouts) ---
-        VBox leftBox = new VBox(5);
-        leftBox.setMinWidth(200);
-        leftBox.getChildren().addAll(new Label("Layouts:"), layoutList);
+        // CENTRO: Layouts e Regiões
+        GridPane centerGrid = new GridPane();
+        centerGrid.setHgap(10);
+        centerGrid.setVgap(5);
 
-        Button btnAddLayout = new Button("Novo Layout");
-        Button btnRemoveLayout = new Button("Remover Layout");
-        btnAddLayout.setMaxWidth(Double.MAX_VALUE);
-        btnRemoveLayout.setMaxWidth(Double.MAX_VALUE);
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(40);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(60);
+        centerGrid.getColumnConstraints().addAll(col1, col2);
 
-        btnAddLayout.setOnAction(e -> addLayout());
-        btnRemoveLayout.setOnAction(e -> removeLayout());
+        centerGrid.add(new Label("Layouts:"), 0, 0);
+        centerGrid.add(layoutList, 0, 1);
+        centerGrid.add(new Label("Regiões OCR:"), 1, 0);
+        centerGrid.add(regionList, 1, 1);
 
-        leftBox.getChildren().addAll(btnAddLayout, btnRemoveLayout);
-        setLeft(leftBox);
+        VBox layoutButtons = new VBox(5, new Button("Novo Layout"), new Button("Remover Layout"));
+        layoutButtons.getChildren().forEach(n -> ((Button)n).setMaxWidth(Double.MAX_VALUE));
+        ((Button)layoutButtons.getChildren().get(0)).setOnAction(e -> addLayout());
+        ((Button)layoutButtons.getChildren().get(1)).setOnAction(e -> removeLayout());
+        centerGrid.add(layoutButtons, 0, 2);
 
-        // --- PAINEL CENTRAL (Regiões) ---
-        VBox centerBox = new VBox(5);
-        centerBox.getChildren().addAll(new Label("Regiões (OCR):"), regionList);
+        VBox regionButtons = new VBox(5, new Button("➕ Adicionar Área"), new Button("➖ Remover Área"));
+        regionButtons.getChildren().forEach(n -> ((Button)n).setMaxWidth(Double.MAX_VALUE));
+        ((Button)regionButtons.getChildren().get(0)).setOnAction(e -> addRegion());
+        ((Button)regionButtons.getChildren().get(1)).setOnAction(e -> removeRegion());
+        centerGrid.add(regionButtons, 1, 2);
 
-        Button btnAddRegion = new Button("➕ Adicionar Área de Captura");
-        Button btnRemoveRegion = new Button("➖ Remover Área");
-        btnAddRegion.setMaxWidth(Double.MAX_VALUE);
-        btnRemoveRegion.setMaxWidth(Double.MAX_VALUE);
+        pane.setCenter(centerGrid);
 
-        btnAddRegion.setOnAction(e -> addRegionToSelectedLayout());
-        btnRemoveRegion.setOnAction(e -> removeRegion());
-
-        centerBox.getChildren().addAll(btnAddRegion, btnRemoveRegion);
-        setCenter(centerBox);
-
-        // Listeners
-        layoutList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+        // Listener para atualizar regiões ao selecionar layout
+        layoutList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
             if (newVal != null) {
                 regions.setAll(newVal.getRegions());
                 clearOverlays();
@@ -132,18 +140,113 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         });
 
         refreshWindowList();
+        return pane;
+    }
+
+    private VBox createSettingsPanel() {
+        VBox settings = new VBox(15);
+        settings.setPadding(new Insets(20));
+
+        Label title = new Label("Configurações de Idioma");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(15);
+        grid.setVgap(15);
+
+        ComboBox<Language> cbSource = new ComboBox<>(FXCollections.observableArrayList(Language.values()));
+        cbSource.setValue(sourceLang);
+        cbSource.setOnAction(e -> sourceLang = cbSource.getValue());
+
+        ComboBox<Language> cbTarget = new ComboBox<>(FXCollections.observableArrayList(Language.values()));
+        cbTarget.setValue(targetLang);
+        cbTarget.setOnAction(e -> targetLang = cbTarget.getValue());
+
+        grid.add(new Label("Idioma de Origem (OCR):"), 0, 0);
+        grid.add(cbSource, 1, 0);
+        grid.add(new Label("Idioma de Destino:"), 0, 1);
+        grid.add(cbTarget, 1, 1);
+
+        Separator sep = new Separator();
+
+        Label help = new Label("Atalhos Globais:\n" +
+                "• CTRL + SHIFT + S: Selecionar área e traduzir instantaneamente\n" +
+                "• CTRL + SHIFT + X: Fechar tradução instantânea");
+        help.setStyle("-fx-text-fill: #7f8c8d;");
+
+        settings.getChildren().addAll(title, grid, sep, help);
+        return settings;
+    }
+
+    // --- Implementação dos Callbacks do HotkeyManager ---
+    @Override
+    public void onQuickCaptureRequested() {
+        Platform.runLater(() -> {
+            screenSelector.startSelection(region -> {
+                processSingleRegion(region, true);
+            });
+        });
+    }
+
+    @Override
+    public void onClearOverlaysRequested() {
+        Platform.runLater(this::clearOverlays);
+    }
+
+    // --- Lógica de Tradução e OCR ---
+    private void startLoop() {
+        executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleAtFixedRate(() -> {
+            if (!isRunning || selectedHwnd == 0 || regions.isEmpty()) return;
+
+            for (Region region : regions) {
+                processSingleRegion(region, false);
+            }
+        }, 0, 2, TimeUnit.SECONDS);
+    }
+
+    private void processSingleRegion(Region region, boolean isQuickAction) {
+        workerPool.submit(() -> {
+            try {
+                BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
+                String text = textExtractor.extract(img).trim();
+
+                if (!text.isEmpty()) {
+                    // Usa os idiomas dinâmicos da aba de configurações
+                    String translated = translateService.translate(text, sourceLang, targetLang);
+
+                    Platform.runLater(() -> {
+                        if (isQuickAction) {
+                            if (quickOverlay != null) quickOverlay.hideOverlay();
+                            quickOverlay = new OverlayWindow(region);
+                            quickOverlay.updateText(translated);
+                            quickOverlay.showOverlay();
+                        } else {
+                            OverlayWindow overlay = overlays.computeIfAbsent(region, OverlayWindow::new);
+                            overlay.updateText(translated);
+                            overlay.showOverlay();
+                        }
+                    });
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        });
     }
 
     private void toggleTranslation() {
         isRunning = !isRunning;
         if (isRunning) {
-            btnPlayPause.setText("⏸ Pausar");
+            btnPlayPause.setText("⏸ Pausar Tradução");
             btnPlayPause.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold;");
         } else {
-            btnPlayPause.setText("▶ Iniciar");
+            btnPlayPause.setText("▶ Iniciar Tradução");
             btnPlayPause.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
             clearOverlays();
         }
+    }
+
+    private void clearOverlays() {
+        overlays.values().forEach(OverlayWindow::hideOverlay);
+        if (quickOverlay != null) quickOverlay.hideOverlay();
     }
 
     private void refreshWindowList() {
@@ -153,7 +256,7 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
                 char[] windowText = new char[512];
                 User32.INSTANCE.GetWindowText(hwnd, windowText, 512);
                 String title = new String(windowText).trim();
-                if (!title.isEmpty() && !title.equals("Tradutor de Tela")) {
+                if (!title.isEmpty()) {
                     windowList.add(new WindowItem(title, Pointer.nativeValue(hwnd.getPointer())));
                 }
             }
@@ -162,119 +265,11 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         comboWindows.setItems(windowList);
     }
 
-    private void startLoop() {
-        executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate(() -> {
-            if (!isRunning || selectedHwnd == 0 || regions.isEmpty()) return;
-
-            for (Region region : regions) {
-                processSingleRegion(region, false);
-            }
-        }, 0, 1500, TimeUnit.MILLISECONDS);
-    }
-
-    private void processSingleRegion(Region region, boolean isQuickAction) {
-        workerPool.submit(() -> {
-            try {
-                isRunning = false;
-                // ScreenCapture.captureWindowRegion deve ser o método que usa PrintWindow
-                BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
-                String text = textExtractor.extract(img).trim();
-
-                if (!text.isEmpty()) {
-                    String translated = translateService.translate(text, Language.ENGLISH, Language.PORTUGUESE);
-
-                    Platform.runLater(() -> {
-                        if (isQuickAction) {
-                            if (quickOverlay != null) quickOverlay.hideOverlay();
-                            quickOverlay = new OverlayWindow(region);
-                            quickOverlay.updateText(translated);
-                            quickOverlay.showOverlay();
-                        } else {
-                            OverlayWindow overlay = overlays.computeIfAbsent(region, r -> new OverlayWindow(r));
-                            overlay.updateText(translated);
-                            overlay.showOverlay();
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    private void initGlobalHotkeys() {
-        try {
-            // Desativa os logs chatos do JNativeHook
-            Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-            logger.setLevel(Level.OFF);
-            logger.setUseParentHandlers(false);
-
-            GlobalScreen.registerNativeHook();
-            GlobalScreen.addNativeKeyListener(this);
-        } catch (NativeHookException ex) {
-            System.err.println("Erro ao ativar atalhos globais.");
-        }
-    }
-
-    // --- ATALHOS GLOBAIS ---
-
-    @Override
-    public void nativeKeyPressed(NativeKeyEvent e) {
-        // Constantes para os atalhos
-        final int QUICK_TRANSLATE_KEY = NativeKeyEvent.VC_1;
-        final int CLOSE_OVERLAY_KEY = NativeKeyEvent.VC_2;
-        final int TOGLE_TRANSLATE_STATE = NativeKeyEvent.VC_3;
-
-        // Modificadores padrão (CTRL + SHIFT)
-        final int REQUIRED_MODIFIERS = NativeKeyEvent.SHIFT_L_MASK;
-
-        // Atalho: CTRL + SHIFT + S (Selecionar e Traduzir agora)
-        boolean modifiers = (e.getModifiers() & REQUIRED_MODIFIERS) == REQUIRED_MODIFIERS;
-
-        // Atalho para selecionar e traduzir
-        if (modifiers && e.getKeyCode() == QUICK_TRANSLATE_KEY) {
-            Platform.runLater(() -> {
-                screenSelector.startSelection(region -> {
-                    processSingleRegion(region, true);
-                });
-            });
-        }
-
-        // Atalho para fechar tradução rápida
-        if (modifiers && e.getKeyCode() == CLOSE_OVERLAY_KEY) {
-            Platform.runLater(() -> {
-                if (quickOverlay != null) {
-                    quickOverlay.hideOverlay();
-                    quickOverlay = null;
-                }
-            });
-        }
-        // Atalho para iniciar e pausar traducoes continuas
-        if (modifiers && e.getKeyCode() == TOGLE_TRANSLATE_STATE) {
-            Platform.runLater(this::toggleTranslation);
-        }
-    }
-
-    @Override public void nativeKeyReleased(NativeKeyEvent e) {}
-    @Override public void nativeKeyTyped(NativeKeyEvent e) {}
-
-    // --- MÉTODOS DE DADOS ---
-
-    private void clearOverlays() {
-        overlays.values().forEach(OverlayWindow::hideOverlay);
-        overlays.clear();
-        if (quickOverlay != null) quickOverlay.hideOverlay();
-    }
-
-    private void loadData() {
-        layouts.setAll(LayoutStorage.load());
-    }
+    // --- Métodos de CRUD de Dados ---
+    private void loadData() { layouts.setAll(LayoutStorage.load()); }
 
     private void addLayout() {
         TextInputDialog dialog = new TextInputDialog("Novo Layout");
-        dialog.setTitle("Adicionar Layout");
-        dialog.setHeaderText("Digite o nome do layout:");
         dialog.showAndWait().ifPresent(name -> {
             Layout layout = new Layout(name);
             layouts.add(layout);
@@ -292,10 +287,9 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         }
     }
 
-    private void addRegionToSelectedLayout() {
+    private void addRegion() {
         Layout selected = layoutList.getSelectionModel().getSelectedItem();
         if (selected == null) return;
-
         screenSelector.startSelection(region -> {
             selected.getRegions().add(region);
             regions.setAll(selected.getRegions());
@@ -313,10 +307,8 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
         }
     }
 
-    // Helper interno
     private static class WindowItem {
-        String title;
-        long hwnd;
+        String title; long hwnd;
         WindowItem(String title, long hwnd) { this.title = title; this.hwnd = hwnd; }
         @Override public String toString() { return title; }
     }
