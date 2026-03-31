@@ -23,8 +23,8 @@ public class ScreenSelector {
         scene.setFill(Color.color(0, 0, 0, 0.3));
 
         Rectangle rect = new Rectangle();
-        rect.setStroke(Color.OLDLACE);
-        rect.setFill(Color.color(1, 0, 0, 0.2));
+        rect.setStroke(Color.color(0.992156862, 0.603921569, 0, 0.8));
+        rect.setFill(Color.color(0.00784313725, 0.031372549, 0.0901960784, 0.8));
 
         root.getChildren().add(rect);
         root.setStyle("-fx-background-color: transparent;");

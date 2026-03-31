@@ -30,7 +30,7 @@ public class OverlayWindow {
         root = new StackPane(textNode);
         root.setAlignment(Pos.TOP_LEFT);
 
-        root.setStyle("-fx-background-color: rgba(2,8,23,0.8); -fx-padding: 5;");
+        root.setStyle("-fx-background-color: rgba(2,8,23,0.9); -fx-padding: 5;");
 
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
@@ -100,10 +100,11 @@ public class OverlayWindow {
         while (size > 5) {
 
             textNode.setStyle(
-                    "-fx-font-family: 'Consolas';" + // 🔥 mantém monoespaçado
+                    "-fx-font-family: 'Consolas';" +
                             "-fx-font-size: " + size + "px;" +
-                            "-fx-fill: rgb(245 158 11);" +
+                            "-fx-fill: white;" +
                             "-fx-font-weight: bold;"
+//                            "-fx-fill: rgb(245, 158, 11);" +
 //                            "-fx-stroke: black;" +
 //                            "-fx-stroke-width: 1px;"
             );

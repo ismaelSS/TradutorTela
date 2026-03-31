@@ -176,6 +176,7 @@ public class LayoutManagerView extends BorderPane implements NativeKeyListener {
     private void processSingleRegion(Region region, boolean isQuickAction) {
         workerPool.submit(() -> {
             try {
+                isRunning = false;
                 // ScreenCapture.captureWindowRegion deve ser o método que usa PrintWindow
                 BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
                 String text = textExtractor.extract(img).trim();

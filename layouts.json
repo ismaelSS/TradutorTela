@@ -43,4 +43,12 @@
     "width" : 751.0,
     "height" : 114.0
   } ]
+}, {
+  "name" : "macakus",
+  "regions" : [ {
+    "x" : 153.0,
+    "y" : 1307.0,
+    "width" : 554.0,
+    "height" : 40.0
+  } ]
 } ]
