@@ -1,54 +1,14 @@
 [ {
-  "name" : "ASDA",
+  "name" : "gfd",
   "regions" : [ {
-    "x" : 1036.0,
-    "y" : 655.0,
-    "width" : 187.0,
-    "height" : 65.0
+    "x" : 958.0,
+    "y" : 492.0,
+    "width" : 638.0,
+    "height" : 95.0
   }, {
-    "x" : 805.0,
-    "y" : 672.0,
-    "width" : 227.0,
-    "height" : 27.0
-  } ]
-}, {
-  "name" : "df",
-  "regions" : [ {
-    "x" : 1584.0,
-    "y" : 90.0,
-    "width" : 59.0,
-    "height" : 51.0
-  } ]
-}, {
-  "name" : "Novo Layout",
-  "regions" : [ {
-    "x" : 1634.0,
-    "y" : 531.0,
-    "width" : 145.0,
-    "height" : 93.0
-  } ]
-}, {
-  "name" : "Novo Layout",
-  "regions" : [ {
-    "x" : 673.0,
-    "y" : 1228.0,
-    "width" : 1328.0,
-    "height" : 150.0
-  } ]
-}, {
-  "name" : "AAAA",
-  "regions" : [ {
-    "x" : 1144.0,
-    "y" : 298.0,
-    "width" : 751.0,
-    "height" : 114.0
-  } ]
-}, {
-  "name" : "macakus",
-  "regions" : [ {
-    "x" : 153.0,
-    "y" : 1307.0,
-    "width" : 554.0,
-    "height" : 40.0
+    "x" : 953.0,
+    "y" : 739.0,
+    "width" : 652.0,
+    "height" : 57.0
   } ]
 } ]
