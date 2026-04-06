@@ -1,5 +1,7 @@
 package com.ismaelSS;
 
+import com.ismaelSS.translate.LanguageExtended;
+import com.ismaelSS.translate.TranslateRequisitionAssembler;
 import space.dynomake.libretranslate.Language;
 import space.dynomake.libretranslate.Translator;
 
@@ -9,15 +11,15 @@ public class TranslateService {
         Translator.setUrlApi("http://localhost:5000/translate");
     }
 
-    public String translate(String text, Language sourceLang, Language targetLang) {
+    public String translate(String text, LanguageExtended sourceLang, LanguageExtended targetLang) {
         try {
 
             if (text == null || text.isBlank()) return "";
 
-            String result = Translator.translate(
+            String result = TranslateRequisitionAssembler.translate(
+                    text,
                     sourceLang,
-                    targetLang,
-                    text
+                    targetLang
             );
 
             return result != null ? result : text;

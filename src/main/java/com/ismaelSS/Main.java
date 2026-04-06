@@ -64,35 +64,6 @@ public class Main extends Application {
         return resultado.toString();
     }
 
-    private String translatePreservingFormat(String text) {
-
-        String translated = translateService.translate(
-                text,
-                Language.ENGLISH,
-                Language.PORTUGUESE
-        );
-
-        String[] originalLines = text.split("\n");
-        String[] translatedLines = translated.split("\n");
-
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < originalLines.length; i++) {
-
-            String indent = originalLines[i].replaceAll("^(\\s*).*", "$1");
-
-            String linhaTraduzida = i < translatedLines.length
-                    ? translatedLines[i]
-                    : "";
-
-            result.append(indent)
-                    .append(linhaTraduzida)
-                    .append("\n");
-        }
-
-        return result.toString();
-    }
-
     public static void main(String[] args) {
         launch(args);
     }

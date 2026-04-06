@@ -8,6 +8,7 @@ import com.ismaelSS.TranslateService;
 import com.ismaelSS.layouts.Layout;
 import com.ismaelSS.layouts.Region;
 import com.ismaelSS.storage.LayoutStorage;
+import com.ismaelSS.translate.LanguageExtended;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.User32;
 import javafx.application.Platform;
@@ -16,7 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import space.dynomake.libretranslate.Language;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
@@ -38,8 +38,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     private Button btnPlayPause;
 
     // --- Configurações de Tradução ---
-    private Language sourceLang = Language.ENGLISH;
-    private Language targetLang = Language.PORTUGUESE;
+    private LanguageExtended sourceLang = LanguageExtended.ENGLISH;
+    private LanguageExtended targetLang = LanguageExtended.PORTUGUESE_BRAZIL;
 
     // --- Serviços e Motores ---
     private ScreenSelector screenSelector = new ScreenSelector();
@@ -154,11 +154,11 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         grid.setHgap(15);
         grid.setVgap(15);
 
-        ComboBox<Language> cbSource = new ComboBox<>(FXCollections.observableArrayList(Language.values()));
+        ComboBox<LanguageExtended> cbSource = new ComboBox<>(FXCollections.observableArrayList(LanguageExtended.values()));
         cbSource.setValue(sourceLang);
         cbSource.setOnAction(e -> sourceLang = cbSource.getValue());
 
-        ComboBox<Language> cbTarget = new ComboBox<>(FXCollections.observableArrayList(Language.values()));
+        ComboBox<LanguageExtended> cbTarget = new ComboBox<>(FXCollections.observableArrayList(LanguageExtended.values()));
         cbTarget.setValue(targetLang);
         cbTarget.setOnAction(e -> targetLang = cbTarget.getValue());
 
@@ -213,7 +213,7 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
 
                 if (!text.isEmpty()) {
                     // Usa os idiomas dinâmicos da aba de configurações
-                    String translated = translateService.translate(text, sourceLang, targetLang);
+                    String translated = translateService.translate( text, sourceLang, targetLang);
 
                     Platform.runLater(() -> {
                         if (isQuickAction) {
