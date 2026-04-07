@@ -137,9 +137,12 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
 
         // Listener para atualizar regiões ao selecionar layout
         layoutList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
+            clearOverlays();
+            overlays.clear();
             if (newVal != null) {
                 regions.setAll(newVal.getRegions());
-                clearOverlays();
+            } else {
+                regions.clear();
             }
         });
 
@@ -217,7 +220,10 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     private void startLoop() {
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(() -> {
-            if (!isRunning || selectedHwnd == 0 || regions.isEmpty()) return;
+            if (!isRunning) {
+                return;
+            }
+            if (selectedHwnd == 0 || regions.isEmpty()) return;
 
             for (Region region : regions) {
                 processSingleRegion(region, false);
@@ -226,6 +232,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     }
 
     private void processSingleRegion(Region region, boolean isQuickAction) {
+        if (!isRunning && !isQuickAction) return;
+        
         workerPool.submit(() -> {
             try {
                 String text;
@@ -238,13 +246,17 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
                     String translated = translateService.translate(text, sourceLang, targetLang);
 
                     Platform.runLater(() -> {
+                        if (!isRunning && !isQuickAction) return;
+                        
                         if (isQuickAction) {
-                            if (quickOverlay != null) quickOverlay.hideOverlay();
+                            if (quickOverlay != null) {
+                                quickOverlay.hideOverlay();
+                            }
                             quickOverlay = new OverlayWindow(region);
                             quickOverlay.updateText(translated);
                             quickOverlay.showOverlay();
                         } else {
-                            OverlayWindow overlay = overlays.computeIfAbsent(region, OverlayWindow::new);
+                            OverlayWindow overlay = overlays.computeIfAbsent(region, r -> new OverlayWindow(r));
                             overlay.updateText(translated);
                             overlay.showOverlay();
                         }
@@ -263,12 +275,13 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
             btnPlayPause.setText("▶ Iniciar Tradução");
             btnPlayPause.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
             clearOverlays();
+            overlays.clear();
         }
     }
 
     private void clearOverlays() {
-        overlays.values().forEach(OverlayWindow::hideOverlay);
-        if (quickOverlay != null) quickOverlay.hideOverlay();
+        overlays.values().forEach(OverlayWindow::close);
+        if (quickOverlay != null) quickOverlay.close();
     }
 
     private void refreshWindowList() {
@@ -306,12 +319,14 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
             regions.clear();
             LayoutStorage.save(layouts);
             clearOverlays();
+            overlays.clear();
         }
     }
 
     private void addRegion() {
         Layout selected = layoutList.getSelectionModel().getSelectedItem();
         if (selected == null) return;
+        overlays.clear();
         screenSelector.startSelection(region -> {
             selected.getRegions().add(region);
             regions.setAll(selected.getRegions());
@@ -326,6 +341,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
             selectedLayout.getRegions().remove(selectedRegion);
             regions.setAll(selectedLayout.getRegions());
             LayoutStorage.save(layouts);
+            OverlayWindow overlay = overlays.remove(selectedRegion);
+            if (overlay != null) overlay.hideOverlay();
         }
     }
 

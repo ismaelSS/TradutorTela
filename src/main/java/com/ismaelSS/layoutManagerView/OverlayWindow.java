@@ -129,14 +129,13 @@ public class OverlayWindow {
     // 🔥 CONTROLE VISUAL
     // =========================
     public void hideOverlay() {
-        stage.setOpacity(0);
+        stage.hide();
     }
 
     public void showOverlay() {
         if (!stage.isShowing()) {
             stage.show();
 
-            // Aplica a mágica do click-through após mostrar a janela
             Platform.runLater(() -> {
                 long hwnd = WindowHandleUtil.getHWND(stage);
                 if (hwnd != 0) {
@@ -144,7 +143,6 @@ public class OverlayWindow {
                 }
             });
         }
-        stage.setOpacity(1);
     }
 
     // =========================
