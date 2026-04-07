@@ -9,6 +9,7 @@ import com.ismaelSS.layouts.Layout;
 import com.ismaelSS.layouts.Region;
 import com.ismaelSS.storage.LayoutStorage;
 import com.ismaelSS.translate.LanguageExtended;
+import com.ismaelSS.translate.LanguageValidator;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.User32;
 import javafx.application.Platform;
@@ -156,11 +157,27 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
 
         ComboBox<LanguageExtended> cbSource = new ComboBox<>(FXCollections.observableArrayList(LanguageExtended.values()));
         cbSource.setValue(sourceLang);
-        cbSource.setOnAction(e -> sourceLang = cbSource.getValue());
 
         ComboBox<LanguageExtended> cbTarget = new ComboBox<>(FXCollections.observableArrayList(LanguageExtended.values()));
         cbTarget.setValue(targetLang);
-        cbTarget.setOnAction(e -> targetLang = cbTarget.getValue());
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+        errorLabel.setVisible(false);
+
+        Runnable validateLanguages = () -> {
+            sourceLang = cbSource.getValue();
+            targetLang = cbTarget.getValue();
+            if (!LanguageValidator.isTargetSupported(sourceLang, targetLang)) {
+                errorLabel.setText("Não é possível traduzir para " + targetLang + " a partir de " + sourceLang);
+                errorLabel.setVisible(true);
+            } else {
+                errorLabel.setVisible(false);
+            }
+        };
+
+        cbSource.setOnAction(e -> validateLanguages.run());
+        cbTarget.setOnAction(e -> validateLanguages.run());
 
         grid.add(new Label("Idioma de Origem (OCR):"), 0, 0);
         grid.add(cbSource, 1, 0);
@@ -174,7 +191,7 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
                 "• CTRL + SHIFT + X: Fechar tradução instantânea");
         help.setStyle("-fx-text-fill: #7f8c8d;");
 
-        settings.getChildren().addAll(title, grid, sep, help);
+        settings.getChildren().addAll(title, grid, errorLabel, sep, help);
         return settings;
     }
 
