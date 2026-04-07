@@ -23,6 +23,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.Collections;
 
 public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCallbacks {
 
@@ -50,6 +51,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
 
     private boolean isRunning = false;
     private long selectedHwnd = 0;
+
+    private final Object captureLock = new Object();
 
     private final ExecutorService workerPool = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors()
@@ -225,12 +228,14 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     private void processSingleRegion(Region region, boolean isQuickAction) {
         workerPool.submit(() -> {
             try {
-                BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
-                String text = textExtractor.extract(img).trim();
+                String text;
+                synchronized (captureLock) {
+                    BufferedImage img = ScreenCapture.captureWindowRegion(selectedHwnd, region);
+                    text = textExtractor.extract(img).trim();
+                }
 
                 if (!text.isEmpty()) {
-                    // Usa os idiomas dinâmicos da aba de configurações
-                    String translated = translateService.translate( text, sourceLang, targetLang);
+                    String translated = translateService.translate(text, sourceLang, targetLang);
 
                     Platform.runLater(() -> {
                         if (isQuickAction) {
