@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import javafx.application.Platform;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +15,7 @@ public class HotkeyManager implements NativeKeyListener {
     public interface HotkeyCallbacks {
         void onQuickCaptureRequested();
         void onClearOverlaysRequested();
+        void toggleTranslation();
     }
 
     public HotkeyManager(HotkeyCallbacks callbacks) {
@@ -37,14 +39,16 @@ public class HotkeyManager implements NativeKeyListener {
         boolean ctrl = (e.getModifiers() & NativeKeyEvent.CTRL_L_MASK) != 0;
         boolean shift = (e.getModifiers() & NativeKeyEvent.SHIFT_L_MASK) != 0;
 
-        //SHIFT + 1 -> Captura Rápida
         if (shift && e.getKeyCode() == NativeKeyEvent.VC_1) {
-            callbacks.onQuickCaptureRequested();
+            Platform.runLater(callbacks::onQuickCaptureRequested);
         }
 
-        // SHIFT + 2 -> Limpar
         if (shift && e.getKeyCode() == NativeKeyEvent.VC_2) {
-            callbacks.onClearOverlaysRequested();
+            Platform.runLater(callbacks::onClearOverlaysRequested);
+        }
+
+        if (shift && e.getKeyCode() == NativeKeyEvent.VC_3) {
+            Platform.runLater(callbacks::toggleTranslation);
         }
     }
 }

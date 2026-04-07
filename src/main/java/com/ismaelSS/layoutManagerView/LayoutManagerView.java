@@ -193,8 +193,9 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         Separator sep = new Separator();
 
         Label help = new Label("Atalhos Globais:\n" +
-                "• CTRL + SHIFT + S: Selecionar área e traduzir instantaneamente\n" +
-                "• CTRL + SHIFT + X: Fechar tradução instantânea");
+                "• SHIFT + 1: Selecionar área e traduzir instantaneamente\n" +
+                "• SHIFT + 2: Fechar tradução instantânea\n" +
+                "• SHIFT + 3: parar/iniciar tradução de layout selecionado");
         help.setStyle("-fx-text-fill: #7f8c8d;");
 
         settings.getChildren().addAll(title, grid, errorLabel, sep, help);
@@ -266,7 +267,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         });
     }
 
-    private void toggleTranslation() {
+    @Override
+    public void toggleTranslation() {
         isRunning = !isRunning;
         if (isRunning) {
             btnPlayPause.setText("⏸ Pausar Tradução");
