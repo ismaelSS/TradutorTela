@@ -37,4 +37,12 @@
     "width" : 343.0,
     "height" : 48.0
   } ]
+}, {
+  "name" : "teste tempoo",
+  "regions" : [ {
+    "x" : 1123.0,
+    "y" : 253.0,
+    "width" : 813.0,
+    "height" : 162.0
+  } ]
 } ]

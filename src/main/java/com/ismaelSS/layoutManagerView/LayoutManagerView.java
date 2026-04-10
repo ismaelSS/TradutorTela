@@ -229,7 +229,7 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
             for (Region region : regions) {
                 processSingleRegion(region, false);
             }
-        }, 0, 2, TimeUnit.SECONDS);
+        }, 0, 500, TimeUnit.MILLISECONDS);
     }
 
     private void processSingleRegion(Region region, boolean isQuickAction) {
