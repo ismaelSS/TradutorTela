@@ -14,6 +14,7 @@ public class PreferencesManager {
 
     private String sourceLangCode;
     private String targetLangCode;
+    private long updateIntervalMs = 1000;
 
     public String getSourceLangCode() {
         return sourceLangCode;
@@ -29,6 +30,14 @@ public class PreferencesManager {
 
     public void setTargetLangCode(String targetLangCode) {
         this.targetLangCode = targetLangCode;
+    }
+
+    public long getUpdateIntervalMs() {
+        return updateIntervalMs;
+    }
+
+    public void setUpdateIntervalMs(long updateIntervalMs) {
+        this.updateIntervalMs = updateIntervalMs;
     }
 
     public static PreferencesManager load() {

@@ -8,6 +8,7 @@ import com.ismaelSS.TranslateService;
 import com.ismaelSS.layouts.Layout;
 import com.ismaelSS.layouts.Region;
 import com.ismaelSS.storage.LayoutStorage;
+import com.ismaelSS.storage.PreferencesManager;
 import com.ismaelSS.translate.LanguageExtended;
 import com.ismaelSS.translate.LanguageValidator;
 import com.sun.jna.Pointer;
@@ -40,9 +41,10 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     private Button btnPlayPause;
 
     // --- Configurações de Tradução ---
-    private LanguageExtended sourceLang = LanguageExtended.ENGLISH;
-    private LanguageExtended targetLang = LanguageExtended.PORTUGUESE_BRAZIL;
-    private long updateIntervalMs = 1000;
+    private PreferencesManager preferences = PreferencesManager.load();
+    private LanguageExtended sourceLang = preferences.getSourceLang();
+    private LanguageExtended targetLang = preferences.getTargetLang();
+    private long updateIntervalMs = preferences.getUpdateIntervalMs();
 
     // --- Serviços e Motores ---
     private ScreenSelector screenSelector = new ScreenSelector();
@@ -180,6 +182,9 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
                 errorLabel.setVisible(true);
             } else {
                 errorLabel.setVisible(false);
+                preferences.setSourceLangCode(sourceLang.getCode());
+                preferences.setTargetLangCode(targetLang.getCode());
+                preferences.save();
             }
         };
 
@@ -196,6 +201,8 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         intervalSlider.valueProperty().addListener((obs, old, val) -> {
             updateIntervalMs = (long) val.doubleValue();
             intervalLabel.setText("Intervalo de atualização: " + updateIntervalMs + "ms");
+            preferences.setUpdateIntervalMs(updateIntervalMs);
+            preferences.save();
             restartLoop();
         });
 
