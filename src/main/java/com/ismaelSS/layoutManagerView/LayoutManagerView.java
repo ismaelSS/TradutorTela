@@ -42,6 +42,7 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     // --- Configurações de Tradução ---
     private LanguageExtended sourceLang = LanguageExtended.ENGLISH;
     private LanguageExtended targetLang = LanguageExtended.PORTUGUESE_BRAZIL;
+    private long updateIntervalMs = 1000;
 
     // --- Serviços e Motores ---
     private ScreenSelector screenSelector = new ScreenSelector();
@@ -154,7 +155,7 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         VBox settings = new VBox(15);
         settings.setPadding(new Insets(20));
 
-        Label title = new Label("Configurações de Idioma");
+        Label title = new Label("Configurações");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         GridPane grid = new GridPane();
@@ -185,10 +186,25 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
         cbSource.setOnAction(e -> validateLanguages.run());
         cbTarget.setOnAction(e -> validateLanguages.run());
 
+        Label intervalLabel = new Label("Intervalo de atualização: " + updateIntervalMs + "ms");
+        Slider intervalSlider = new Slider(200, 5000, updateIntervalMs);
+        intervalSlider.setShowTickLabels(true);
+        intervalSlider.setShowTickMarks(true);
+        intervalSlider.setMajorTickUnit(1000);
+        intervalSlider.setMinorTickCount(4);
+        intervalSlider.setBlockIncrement(100);
+        intervalSlider.valueProperty().addListener((obs, old, val) -> {
+            updateIntervalMs = (long) val.doubleValue();
+            intervalLabel.setText("Intervalo de atualização: " + updateIntervalMs + "ms");
+            restartLoop();
+        });
+
         grid.add(new Label("Idioma de Origem (OCR):"), 0, 0);
         grid.add(cbSource, 1, 0);
         grid.add(new Label("Idioma de Destino:"), 0, 1);
         grid.add(cbTarget, 1, 1);
+        grid.add(intervalLabel, 0, 2);
+        grid.add(intervalSlider, 1, 2);
 
         Separator sep = new Separator();
 
@@ -220,16 +236,24 @@ public class LayoutManagerView extends TabPane implements HotkeyManager.HotkeyCa
     // --- Lógica de Tradução e OCR ---
     private void startLoop() {
         executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate(() -> {
-            if (!isRunning) {
-                return;
-            }
-            if (selectedHwnd == 0 || regions.isEmpty()) return;
+        restartLoop();
+    }
+    
+    private void restartLoop() {
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = Executors.newSingleThreadScheduledExecutor();
+            executor.scheduleAtFixedRate(() -> {
+                if (!isRunning) {
+                    return;
+                }
+                if (selectedHwnd == 0 || regions.isEmpty()) return;
 
-            for (Region region : regions) {
-                processSingleRegion(region, false);
-            }
-        }, 0, 500, TimeUnit.MILLISECONDS);
+                for (Region region : regions) {
+                    processSingleRegion(region, false);
+                }
+            }, 0, updateIntervalMs, TimeUnit.MILLISECONDS);
+        }
     }
 
     private void processSingleRegion(Region region, boolean isQuickAction) {
