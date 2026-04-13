@@ -20,6 +20,7 @@ public class Main extends Application {
     private Map<String, String> cache = new HashMap<>();
     private Stage mainStage;
     private SplashScreen splashScreen;
+    private volatile boolean initialized = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -28,8 +29,8 @@ public class Main extends Application {
         splashScreen = new SplashScreen();
         splashScreen.show();
         
-        splashScreen.updateProgress(1, "Checking dependencies...", 10);
-
+        Platform.runLater(() -> splashScreen.updateProgress(1, "Checking dependencies...", 10));
+        
         Thread.startVirtualThread(() -> {
             try {
                 initializeServices();
@@ -43,7 +44,7 @@ public class Main extends Application {
     }
 
     private void initializeServices() throws Exception {
-        splashScreen.updateProgress(1, "Checking dependencies...", 25);
+        Platform.runLater(() -> splashScreen.updateProgress(1, "Checking dependencies...", 25));
         
         LibreTranslateManager libManager = new LibreTranslateManager();
         libManager.setStatusCallback((status, isError) -> {
@@ -61,17 +62,19 @@ public class Main extends Application {
         Platform.runLater(() -> {
             splashScreen.updateProgress(3, "Loading application...", 75);
             
-            showMainApp();
-            
-            splashScreen.updateProgress(4, "Done!", 100);
-            
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            
-            Platform.runLater(splashScreen::close);
+            Platform.runLater(() -> {
+                showMainApp();
+                
+                splashScreen.updateProgress(4, "Done!", 100);
+                
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                
+                splashScreen.close();
+            });
         });
     }
 
@@ -84,9 +87,13 @@ public class Main extends Application {
         mainStage.show();
 
         Platform.runLater(() -> {
-            long hwnd = WindowHandleUtil.getHWND(mainStage);
-            if (hwnd != 0) {
-                WinOverlayUtil.makeWindowTransparent(hwnd);
+            try {
+                long hwnd = WindowHandleUtil.getHWND(mainStage);
+                if (hwnd != 0) {
+                    WinOverlayUtil.makeWindowTransparent(hwnd);
+                }
+            } catch (Exception e) {
+                System.out.println("[Main] Window transparency skipped: " + e.getMessage());
             }
         });
 

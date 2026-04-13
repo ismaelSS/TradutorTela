@@ -69,13 +69,7 @@ public class SplashScreen {
         label.setAlignment(Pos.CENTER);
         label.setPrefWidth(400);
 
-        addGlowEffect(label);
         return label;
-    }
-
-    private void addGlowEffect(Label label) {
-        label.setStyle(label.getStyle() 
-            + "-fx-effect: dropshadow(glow, " + toHex(ACCENT_COLOR) + ", 10, 0.8, 0, 0);");
     }
 
     private VBox createProgressBar() {
@@ -215,7 +209,7 @@ public class SplashScreen {
             statusLabel.setText(status);
         }
 
-        stage.setTitle("Loading... " + percent + "%");
+        // Skip stage.setTitle to avoid threading issues
     }
 
     public void complete() {
