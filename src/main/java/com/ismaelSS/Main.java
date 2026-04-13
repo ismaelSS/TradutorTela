@@ -17,26 +17,76 @@ public class Main extends Application {
 
     private TranslateService translateService;
     private TextExtractor textExtractor;
-
     private Map<String, String> cache = new HashMap<>();
+    private Stage mainStage;
+    private SplashScreen splashScreen;
 
     @Override
     public void start(Stage primaryStage) {
+        this.mainStage = primaryStage;
+        
+        splashScreen = new SplashScreen();
+        splashScreen.show();
+        
+        splashScreen.updateProgress(1, "Checking dependencies...", 10);
+
+        Thread.startVirtualThread(() -> {
+            try {
+                initializeServices();
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    splashScreen.showError(e.getMessage());
+                    e.printStackTrace();
+                });
+            }
+        });
+    }
+
+    private void initializeServices() throws Exception {
+        splashScreen.updateProgress(1, "Checking dependencies...", 25);
+        
+        LibreTranslateManager libManager = new LibreTranslateManager();
+        libManager.setStatusCallback((status, isError) -> {
+            Platform.runLater(() -> {
+                if (isError) {
+                    splashScreen.showError(status);
+                } else {
+                    splashScreen.updateProgress(2, status, 50);
+                }
+            });
+        });
+        
+        libManager.start();
+        
+        Platform.runLater(() -> {
+            splashScreen.updateProgress(3, "Loading application...", 75);
+            
+            showMainApp();
+            
+            splashScreen.updateProgress(4, "Done!", 100);
+            
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            Platform.runLater(splashScreen::close);
+        });
+    }
+
+    private void showMainApp() {
         LayoutManagerView view = new LayoutManagerView();
         Scene scene = new Scene(view, 600, 400);
 
-        primaryStage.setTitle("Tradutor de Tela");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        mainStage.setTitle("Tradutor de Tela");
+        mainStage.setScene(scene);
+        mainStage.show();
 
-        // Adicione isso para que a janela do programa também não saia no print
         Platform.runLater(() -> {
-            long hwnd = WindowHandleUtil.getHWND(primaryStage);
+            long hwnd = WindowHandleUtil.getHWND(mainStage);
             if (hwnd != 0) {
                 WinOverlayUtil.makeWindowTransparent(hwnd);
-                // Se você quiser que a janela principal ainda receba cliques,
-                // você pode criar um método específico no WinOverlayUtil que apenas
-                // chama o SetWindowDisplayAffinity sem o WS_EX_TRANSPARENT.
             }
         });
 
@@ -45,12 +95,10 @@ public class Main extends Application {
     }
 
     private String processText(String text) {
-
         String[] linhas = text.split("\n");
         StringBuilder resultado = new StringBuilder();
 
         for (String linha : linhas) {
-
             String indent = linha.replaceAll("^(\\s*).*", "$1");
             String conteudo = linha.trim();
 
