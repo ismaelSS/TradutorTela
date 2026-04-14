@@ -16,8 +16,8 @@ public class TextExtractor {
         tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
         tesseract.setLanguage("eng");
 
-        tesseract.setVariable("tessedit_char_whitelist",
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,!?:;");
+//        tesseract.setVariable("tessedit_char_whitelist",
+//                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,!?:;");
 
         tesseract.setPageSegMode(6);
         tesseract.setOcrEngineMode(1);
@@ -29,7 +29,7 @@ public class TextExtractor {
     public String extract(BufferedImage img) {
         try {
 
-            ImageIO.write(img, "png", new File("original.png"));
+//            ImageIO.write(img, "png", new File("original.png"));
 //            img = adjustContrast(img,5f);
 //            ImageIO.write(img, "png", new File("contrat5.png"));
 

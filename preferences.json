@@ -2,6 +2,6 @@
   "sourceLangCode" : "en",
   "targetLangCode" : "pt-BR",
   "updateIntervalMs" : 1080,
-  "sourceLang" : "ENGLISH",
-  "targetLang" : "PORTUGUESE_BRAZIL"
+  "targetLang" : "PORTUGUESE_BRAZIL",
+  "sourceLang" : "ENGLISH"
 }

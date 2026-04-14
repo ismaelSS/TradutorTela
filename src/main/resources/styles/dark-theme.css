@@ -1,0 +1,368 @@
+/* ============================================
+   THE INVISIBLE PRECISION FRAMEWORK
+   Design System: The Silent Sentinel
+   ============================================ */
+
+.root {
+    /* Surface Hierarchy */
+    -surface: #0b1326;
+    -surface-container-lowest: #060e20;
+    -surface-container-low: #131b2e;
+    -surface-container: #1a2237;
+    -surface-container-high: #222a3d;
+    -surface-container-highest: #2d3449;
+    -surface-variant: #1e2a3d;
+    
+    /* Primary Colors - Electric Accents */
+    -primary: #a8e8ff;
+    -primary-container: #00d4ff;
+    -on-primary: #0b1326;
+    -on-surface: #dae2fd;
+    -on-surface-variant: #bbc9cf;
+    
+    /* Status Colors */
+    -error: #ff6b6b;
+    -error-container: #93000a;
+    -tertiary: #ffd9a1;
+    -tertiary-container: #feb528;
+    -success: #4ade80;
+    -success-container: #166534;
+    
+    /* Border / Outline */
+    -outline-variant: rgba(60, 73, 78, 0.15);
+    
+    /* Typography */
+    -font-display: 'Manrope', sans-serif;
+    -font-body: 'Inter', sans-serif;
+    
+    /* Spacing */
+    -spacing-xs: 4px;
+    -spacing-sm: 8px;
+    -spacing-md: 16px;
+    -spacing-lg: 24px;
+    -spacing-xl: 32px;
+    
+    /* Radii */
+    -radius-sm: 8px;
+    -radius-md: 12px;
+    -radius-lg: 16px;
+    -radius-xl: 24px;
+    
+    /* Background */
+    -fx-background-color: -surface;
+}
+
+/* ============================================
+   TAB PANE - No Borders Design
+   ============================================ */
+
+.tab-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: -surface-container-low;
+    -fx-padding: 12px 16px 0 16px;
+}
+
+.tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-text-fill: -on-surface-variant;
+    -fx-font-family: -font-body;
+    -fx-font-size: 14px;
+    -fx-font-weight: medium;
+    -fx-padding: 10px 20px;
+    -fx-background-radius: -radius-sm -radius-sm 0 0;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: -surface-container-high;
+    -fx-text-fill: -primary;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab:hover {
+    -fx-background-color: -surface-container;
+}
+
+/* ============================================
+   BUTTONS - Tonal Gradient Style
+   ============================================ */
+
+.button-primary {
+    -fx-background-color: linear-gradient(135deg, -primary 0%, -primary-container 100%);
+    -fx-text-fill: -on-primary;
+    -fx-font-family: -font-body;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 12px 24px;
+    -fx-background-radius: -radius-md;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, -primary, 4, 0.1, 0, 0);
+}
+
+.button-primary:hover {
+    -fx-effect: dropshadow(gaussian, -primary, 8, 0.2, 0, 0);
+}
+
+.button-primary:pressed {
+    -fx-opacity: 0.9;
+}
+
+.button-secondary {
+    -fx-background-color: transparent;
+    -fx-text-fill: -primary;
+    -fx-font-family: -font-body;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 10px 20px;
+    -fx-background-radius: -radius-md;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+
+.button-secondary:hover {
+    -fx-background-color: -surface-container-highest;
+}
+
+.button-icon {
+    -fx-background-color: -surface-container;
+    -fx-text-fill: -on-surface;
+    -fx-font-size: 16px;
+    -fx-padding: 8px;
+    -fx-background-radius: -radius-sm;
+    -fx-cursor: hand;
+    -fx-min-width: 36px;
+    -fx-min-height: 36px;
+}
+
+.button-icon:hover {
+    -fx-background-color: -surface-container-high;
+}
+
+/* ============================================
+   COMBOBOX - Floating Style
+   ============================================ */
+
+.combo-box {
+    -fx-background-color: -surface-container-low;
+    -fx-text-fill: -on-surface;
+    -fx-font-family: -font-body;
+    -fx-font-size: 14px;
+    -fx-padding: 10px 14px;
+    -fx-background-radius: -radius-sm;
+    -fx-border-color: transparent;
+}
+
+.combo-box:hover {
+    -fx-background-color: -surface-container;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8px;
+}
+
+.combo-box .arrow {
+    -fx-background-color: -on-surface-variant;
+}
+
+/* ============================================
+   LIST VIEW - No Divider Design
+   ============================================ */
+
+.list-view {
+    -fx-background-color: -surface-container-low;
+    -fx-border-color: transparent;
+    -fx-background-radius: -radius-md;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -on-surface;
+    -fx-font-family: -font-body;
+    -fx-font-size: 13px;
+    -fx-padding: 12px 16px;
+}
+
+.list-view .list-cell:hover {
+    -fx-background-color: -surface-variant;
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: -surface-container-high;
+    -fx-text-fill: -primary;
+}
+
+/* ============================================
+   SLIDER - Track Style
+   ============================================ */
+
+.slider .track {
+    -fx-background-color: -surface-container-high;
+    -fx-background-radius: 4px;
+    -fx-pref-height: 6px;
+}
+
+.slider .thumb {
+    -fx-background-color: -primary;
+    -fx-background-radius: 10px;
+    -fx-pref-width: 20px;
+    -fx-pref-height: 20px;
+    -fx-effect: dropshadow(gaussian, -primary, 4, 0.15, 0, 0);
+}
+
+.slider .axis {
+    -fx-tick-label-fill: -on-surface-variant;
+    -fx-tick-label-font-family: -font-body;
+    -fx-tick-label-font-size: 11px;
+}
+
+/* ============================================
+   LABELS - Typography Hierarchy
+   ============================================ */
+
+.label-title {
+    -fx-text-fill: -on-surface;
+    -fx-font-family: -font-display;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+.label-subtitle {
+    -fx-text-fill: -on-surface;
+    -fx-font-family: -font-body;
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+}
+
+.label-body {
+    -fx-text-fill: -on-surface;
+    -fx-font-family: -font-body;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+}
+
+.label-secondary {
+    -fx-text-fill: -on-surface-variant;
+    -fx-font-family: -font-body;
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+}
+
+.label-status-ready {
+    -fx-text-fill: -primary;
+    -fx-font-family: -font-body;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+.label-status-installing {
+    -fx-text-fill: -tertiary;
+    -fx-font-family: -font-body;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+.label-status-error {
+    -fx-text-fill: -error;
+    -fx-font-family: -font-body;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+/* ============================================
+   SEPARATOR - Hidden (No-Line Rule)
+   ============================================ */
+
+.separator {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* ============================================
+   GRID PANE & CONTAINER STYLES
+   ============================================ */
+
+.card {
+    -fx-background-color: -surface-container-low;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+.card-elevated {
+    -fx-background-color: -surface-container-high;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+/* ============================================
+   STATUS INDICATOR - Pulsing Glow
+   ============================================ */
+
+.status-indicator {
+    -fx-pref-width: 10px;
+    -fx-pref-height: 10px;
+    -fx-background-radius: 5px;
+}
+
+.status-indicator.ready {
+    -fx-background-color: -primary;
+    -fx-effect: dropshadow(gaussian, -primary, 6, 0.3, 0, 0);
+}
+
+.status-indicator.installing {
+    -fx-background-color: -tertiary-container;
+}
+
+.status-indicator.error {
+    -fx-background-color: -error;
+}
+
+/* ============================================
+   TRANSLATION HUD - Glassmorphism
+   ============================================ */
+
+.translation-hud {
+    -fx-background-color: rgba(6, 14, 32, 0.85);
+    -fx-background-radius: -radius-lg;
+    -fx-padding: 12px 16px;
+    -fx-border-radius: -radius-lg;
+    -fx-border-color: rgba(168, 232, 255, 0.1);
+    -fx-border-width: 1px;
+}
+
+.translation-hud .handle {
+    -fx-background-color: rgba(168, 232, 255, 0.4);
+    -fx-background-radius: 2px;
+    -fx-pref-width: 4px;
+    -fx-pref-height: 40px;
+}
+
+/* ============================================
+   SCROLL PANE
+   ============================================ */
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+
+.scroll-bar:vertical .thumb {
+    -fx-background-color: -surface-container-high;
+    -fx-background-radius: 4px;
+}
+
+.scroll-bar:vertical .thumb:hover {
+    -fx-background-color: -surface-container-highest;
+}
